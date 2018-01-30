@@ -38,6 +38,9 @@ You need to have a file at `~/.xmonad/xmonad.hs`.
 
 It needs a `main` that runs an `xmonad` and a customized [XConfig](https://hackage.haskell.org/package/xmonad-0.13/docs/XMonad-Core.html#t:XConfig)
 
+There is also some description of the [Layouts](https://github.com/xmonad/xmonad/wiki/Layouts)
+
+
 # Useful tools
 
 Status bars:
@@ -50,3 +53,7 @@ Launch bars:
 
 * [Rofi](https://github.com/DaveDavenport/rofi)
 * [dmenu](https://tools.suckless.org/dmenu/)
+
+# Amazing config
+
+There is this youtube video called `XMonad Demo` that has a super complex [configuration](https://github.com/altercation/dotfiles-tilingwm/blob/c9c6684381215a865116523868790eeae7e4fd2f/.xmonad/xmonad.hs).
