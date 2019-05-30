@@ -1,3 +1,9 @@
+-------------------------------------------------------------------------
+-- | Example.hs
+-- 
+-- Example configuration file for xmonad using the latest recommended
+-- features (e.g., 'desktopConfig').
+
 module Main (main) where
 
 
@@ -11,6 +17,8 @@ import XMonad.Layout.NoBorders (noBorders)
 import XMonad.Layout.ResizableTile
 import XMonad.Layout.ToggleLayouts (ToggleLayout(..), toggleLayouts)
 import XMonad.Prompt
+import XMonad.Layout.NoFrillsDecoration
+import XMonad.Layout.Spacing (smartSpacingWithEdge, spacing)
 -- import XMonad.Prompt.ConfirmPrompt
 -- import XMonad.Prompt.Shell
 import XMonad.Util.EZConfig
@@ -25,23 +33,38 @@ import XMonad.Hooks.SetWMName
 
 main :: IO ()
 main = do
-  spawn "polybar top" -- Start a task bar.
+  -- spawn "polybar top" -- Start a task bar.
 
   -- Start xmonad using the main desktop configuration with a few
   -- simple overrides:
   xmonad $ ewmh $ desktopConfig
     {workspaces = ["1:dev","2:web","3:music","4:comm","5:ham","6:tmp"]
-    , terminal = "gnome-terminal"
-    , borderWidth = 2
-    , focusedBorderColor = "#ffae1a"
+    , terminal = "urxvt"
+    --, borderWidth = 2
+    -- , focusedBorderColor = "#ffae1a"
     , modMask    = mod4Mask -- Use the "Win" key for the mod key
     , manageHook = myManageHook <+> manageHook desktopConfig
-    , layoutHook = desktopLayoutModifiers myLayouts
+    , layoutHook = noBorders $ desktopLayoutModifiers myLayouts
     , focusFollowsMouse = False
     , logHook    = dynamicLogString def >>= xmonadPropLog
     , keys = myKeys
     , startupHook = setWMName "LG3D"
     }
+
+--------------------------------------------------------------------------------
+-- | My theme
+--
+-- This is just used for de top bar indicator.
+myTheme = def{ decoHeight            = 5
+             , inactiveBorderColor   = base03
+             , inactiveColor         = base03
+             , inactiveTextColor     = base03
+             , activeBorderColor     = active
+             , activeColor           = active
+             , activeTextColor       = active
+             }
+base03 = "#282828"
+active = "#50fa7b"
 
 --------------------------------------------------------------------------------
 -- | Customize layouts.
@@ -50,10 +73,11 @@ main = do
 -- and 'BinarySpacePartition'.  You can also use the 'M-<Esc>' key
 -- binding defined above to toggle between the current layout and a
 -- full screen layout.
-myLayouts =  (ResizableTall 1 (1.5/100) (3/5) []) ||| others
+myLayouts = highlightedLayouts ||| Full
   where
-    others = noBorders Full ||| emptyBSP
-
+    highlightedLayouts = noFrillsDeco shrinkText myTheme $ smartSpacingWithEdge 4 $ (myTall ||| Mirror myTall)
+    myTall = ResizableTall 1 (1.5/100) (3/5) []
+    
 --------------------------------------------------------------------------------
 -- | Customize the way 'XMonad.Prompt' looks and behaves.  It's a
 -- great replacement for dzen.
@@ -102,7 +126,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
     ,((modMask .|. shiftMask, xK_p     ), spawn "rofi -show run") -- %! Launch gmrun
     ,((modMask,                xK_s    ), spawn "rofi -show window")
     ,((modMask .|. shiftMask, xK_c     ), kill) -- %! Close the focused window
-    ,((modMask,               xK_e     ), spawn "emacsclient -c -n") -- emacs client frame
+    ,((modMask,               xK_e     ), spawn "emacsclient -c ") -- emacs client frame
     ,((modMask,               xK_space ), sendMessage NextLayout) -- %! Rotate through the available layout algorithms
     ,((modMask .|. shiftMask, xK_space ), setLayout $ XMonad.layoutHook conf) -- %!  Reset the layouts on the current workspace to default
 
