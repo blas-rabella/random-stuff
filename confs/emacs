@@ -164,21 +164,38 @@
       (evil-set-initial-state `,(car mode-map) `,(cdr mode-map)))))
 
 ;; UI
-
-(use-package nord-theme 
-  :ensure t 
-  :load-path "themes"
-  :config
-  (load-theme 'nord t))
-
-(use-package spaceline
+(use-package doom-themes
   :ensure t
-  :init
-  (require 'spaceline-config)
-  (setq spaceline-highlight-face-func 'spaceline-highlight-face-evil-state)
   :config
-  (spaceline-spacemacs-theme)
-)
+  (load-theme 'doom-nord))
+
+(use-package doom-modeline
+      :ensure t
+      :init (setq doom-modeline-checker-simple-format nil
+                  doom-modeline-lsp t
+                  doom-modeline-buffer-file-name-style 'relative-from-project
+                  evil-normal-state-tag   (propertize "<N>" 'face '((:background "green" :foreground "black")))
+                  evil-emacs-state-tag    (propertize "<E>" 'face '((:background "orange" :foreground "black")))
+                  evil-insert-state-tag   (propertize "<I>" 'face '((:background "red") :foreground "white"))
+                  evil-motion-state-tag   (propertize "<M>" 'face '((:background "blue") :foreground "white"))
+                  evil-visual-state-tag   (propertize "<V>" 'face '((:background "grey80" :foreground "black")))
+                  evil-operator-state-tag (propertize "<O>" 'face '((:background "purple"))))
+      :hook (after-init . doom-modeline-mode))
+
+;; (use-package nord-theme 
+;;   :ensure t 
+;;   :load-path "themes"
+;;   :config
+;;   (load-theme 'nord t))
+
+;; (use-package spaceline
+;;   :ensure t
+;;   :init
+;;   (require 'spaceline-config)
+;;   (setq spaceline-highlight-face-func 'spaceline-highlight-face-evil-state)
+;;   :config
+;;   (spaceline-spacemacs-theme)
+;; )
 
 ;; LANGUAGES
 (use-package lsp-mode
