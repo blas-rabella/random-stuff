@@ -79,17 +79,6 @@ myLayouts = highlightedLayouts ||| Full
     myTall = ResizableTall 1 (1.5/100) (3/5) []
     
 --------------------------------------------------------------------------------
--- | Customize the way 'XMonad.Prompt' looks and behaves.  It's a
--- great replacement for dzen.
-myXPConfig :: XPConfig
-myXPConfig = def
-  { position          = Top
-  , alwaysHighlight   = True
-  , promptBorderWidth = 0
-  , font              = "xft:monospace:size=9"
-  }
-
---------------------------------------------------------------------------------
 -- | Manipulate windows as they are created.  The list given to
 -- @composeOne@ is processed from top to bottom.  The first matching
 -- rule wins.
