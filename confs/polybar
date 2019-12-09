@@ -1,0 +1,302 @@
+; Nord polybar
+
+[colors]
+
+;Polar night
+tbg1 = "#882e3440"
+bg1 = "#2e3440"
+bg2 = "#3b4252"
+bg3 = "#434c5e"
+bg4 = "#4c566a"
+
+;Snow storm
+fg1 = "#d8dee9"
+fg2 = "#e5e9f0"
+fg3 = "#eceff4"
+
+;Frost
+color1 = "#8fbcbb"
+color2 = "#88c0d0"
+color3 = "#8fbcbb"
+color4 = "#5e81ac"
+
+; Aurora
+accent1 = "#bf616a"
+accent2 = "#d08770"
+accent3 = "#ebcb8b"
+accent4 = "#a3be8c"
+accent5 = "#b48ead"
+accent6 = "#8babeb"
+
+[bar/top]
+monitor         = eDP-1 
+width           = 100%
+height          = 16
+offset-x        = 0%
+offset-y        = 0
+border-top-size = 0
+locale          = en_US.UTF-8
+background      = ${colors.tbg1}
+foreground      = ${colors.fg1}
+
+font-0              = IosevkaCC Medium:size=10:fontformat=truetype;2
+font-3              = FontAwesome:size=10;2
+font-4              = octicons:pixelsize=10;2
+font-5              = all-the-icons:pixelsize=10;2
+font-1              = Sarasa Term SC:size=10:fontformat=truetype;2
+font-2              = siji:size=10:fontformat=truetype;2
+
+modules-left        = ewmh xwindow
+modules-center      = date
+modules-right       = mpd backlight volumeintel battery cpu memory
+
+tray-position       = right
+tray-padding        = 8
+
+underline-size      = 0
+spacing             = 0
+padding-left        = 0
+padding-right       = 0
+module-margin-left  = 0
+module-margin-right = 0
+
+[module/xwindow]
+type              = internal/xwindow
+label             = %title:0:30:...%
+format-foreground = ${colors.bg1}
+format-background = ${colors.accent6}
+format-padding    = 1
+
+
+[module/backlight]
+type               = internal/backlight
+card               = intel_backlight
+format             = <label>
+format-padding     = 1
+label              =  %percentage%%
+
+
+[module/mpd]
+type                     = internal/mpd
+
+host                     = 127.0.0.1
+port                     = 6600
+password                 =
+
+; Seconds to sleep between progressbar/song timer sync
+; Default: 1
+interval                 = 1
+format-online            = <icon-prev> <icon-seekb> <toggle> <icon-seekf> <icon-next> <icon-random> <label-time> <label-song>
+format-playing = ${self.format-online}
+format-paused = ${self.format-online}
+format-stopped = ${self.format-online}
+;; Player
+format-online-foreground = ${colors.bg1}
+format-online-background = ${colors.accent1}
+
+;; Time
+label-time = "%elapsed% / %total%"
+label-time-foreground    = ${colors.bg1}
+label-time-background    = ${colors.accent2}
+;; Song
+label-song = " %title% "
+label-song-foreground    = ${colors.bg1}
+label-song-background    = ${colors.accent3}
+
+icon-prev       = "  "
+icon-seekb      = 
+icon-stop       = 
+icon-pause      = 
+icon-play       = 
+icon-next       = 
+icon-seekf      = 
+
+icon-random     = 
+icon-repeat     = 
+
+icon-repeatone  = 🔂
+
+[module/volumeintel]
+type                      = internal/volume
+format-volume             = <ramp-volume> <label-volume>
+master-mixer              = Master
+label-muted               =  muted
+ramp-volume-0             = 
+ramp-volume-1             = 
+ramp-volume-2             = 
+format-volume-padding     = 1
+; mapping                   = true
+
+
+[module/date]
+type              = internal/date
+interval          = 2
+time              = "%H:%M"
+time-alt          = " %A, %d. %B"
+format            = <label>
+format-padding    = 1
+format-background = ${colors.accent5}
+format-foreground = ${colors.bg2}
+label             = " %time%"
+
+[module/battery]
+type                         = internal/battery
+battery                      = BAT1
+adapter                      = ADP1
+full-at                      = 99
+
+format-charging              = <animation-charging> <label-charging>
+
+format-discharging           = <ramp-capacity> <label-discharging>
+label-discharging            = %percentage%% (%time%)
+
+format-full-prefix           = " "
+
+format-padding               = 1
+
+ramp-capacity-0              = 
+ramp-capacity-1              = 
+ramp-capacity-2              = 
+ramp-capacity-3              = 
+ramp-capacity-4              = 
+
+animation-charging-0         = 
+animation-charging-1         = 
+animation-charging-2         = 
+animation-charging-3         = 
+animation-charging-4         = 
+animation-charging-framerate = 750
+
+[module/cpu]
+type = internal/cpu
+interval = 0.5
+format = <label> <ramp-coreload>
+label = CPU
+format-padding = 1
+
+ramp-coreload-0 = ▁
+ramp-coreload-0-font = 2
+ramp-coreload-0-foreground = #aaff77
+ramp-coreload-1 = ▂
+ramp-coreload-1-font = 2
+ramp-coreload-1-foreground = #aaff77
+ramp-coreload-2 = ▃
+ramp-coreload-2-font = 2
+ramp-coreload-2-foreground = #aaff77
+ramp-coreload-3 = ▄
+ramp-coreload-3-font = 2
+ramp-coreload-3-foreground = #aaff77
+ramp-coreload-4 = ▅
+ramp-coreload-4-font = 2
+ramp-coreload-4-foreground = #fba922
+ramp-coreload-5 = ▆
+ramp-coreload-5-font = 2
+ramp-coreload-5-foreground = #fba922
+ramp-coreload-6 = ▇
+ramp-coreload-6-font = 2
+ramp-coreload-6-foreground = #ff5555
+ramp-coreload-7 = █
+ramp-coreload-7-font = 2
+ramp-coreload-7-foreground = #ff5555
+
+
+[module/ewmh]
+type = internal/xworkspaces
+
+; Only show workspaces defined on the same output as the bar
+;
+; Useful if you want to show monitor specific workspaces
+; on different bars
+;
+; Default: false
+pin-workspaces = false
+
+; Create click handler used to focus desktop
+; Default: true
+enable-click = false
+
+label-monitor = "%icon% "
+label-active  = " %icon% %name% "
+label-empty  = " %icon% "
+label-occupied  = " %icon% "
+
+; Create scroll handlers used to cycle desktops
+; Default: true
+enable-scroll = false
+
+format-background = ${colors.color1}
+format-foreground = ${colors.bg2}
+label-active-foreground = ${colors.color4}
+label-active-background = ${colors.color2}
+label-empty-foreground = ${colors.color1}
+label-empty-background = ${colors.tbg1}
+label-occupied-foreground = ${colors.bg1}
+label-occupied-background = ${colors.color4}
+;;  
+;;    ● ○
+
+icon-0 = 1:dev;一
+icon-1 = 2:web;二
+icon-2 = 3:music;三
+icon-3 = 4:comm;四
+icon-4 = 5:ham;五
+icon-5 = 6:tmp;六
+
+[module/memory]
+type = internal/memory
+
+; Seconds to sleep between updates
+; Default: 1
+interval = 3
+;; MEMORY
+format = <label>
+; Available tokens:
+;   %percentage_used% (default)
+;   %percentage_free%
+;   %gb_used%
+;   %gb_free%
+;   %gb_total%
+;   %mb_used%
+;   %mb_free%
+;   %mb_total%
+;   %percentage_swap_used%
+;   %percentage_swap_free%
+;   %mb_swap_total%
+;   %mb_swap_free%
+;   %mb_swap_used%
+;   %gb_swap_total%
+;   %gb_swap_free%
+;   %gb_swap_used%
+
+label = RAM %gb_used%/%gb_total%
+
+; Only applies if <bar-used> is used
+bar-used-indicator =
+bar-used-width = 50
+bar-used-foreground-0 = #55aa55
+bar-used-foreground-1 = #557755
+bar-used-foreground-2 = #f5a70a
+bar-used-foreground-3 = #ff5555
+bar-used-fill = ▐
+bar-used-empty = ▐
+bar-used-empty-foreground = #444444
+
+; Only applies if <ramp-used> is used
+ramp-used-0 = ▁
+ramp-used-1 = ▂
+ramp-used-2 = ▃
+ramp-used-3 = ▄
+ramp-used-4 = ▅
+ramp-used-5 = ▆
+ramp-used-6 = ▇
+ramp-used-7 = █
+
+; Only applies if <ramp-free> is used
+ramp-free-0 = ▁
+ramp-free-1 = ▂
+ramp-free-2 = ▃
+ramp-free-3 = ▄
+ramp-free-4 = ▅
+ramp-free-5 = ▆
+ramp-free-6 = ▇
+ramp-free-7 = █
