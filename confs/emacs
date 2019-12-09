@@ -8,7 +8,8 @@
  show-paren-delay 0.5
  use-package-always-ensure t
  sentence-end-double-space nil
- )
+ custom-safe-themes t
+)
 
 ;; buffer local variables
 (setq-default
@@ -91,10 +92,15 @@
   :config
 (counsel-projectile-mode))
 
-(use-package ivy :demand
-  :config
+(use-package ivy :ensure t
+  :init
   (setq ivy-use-virtual-buffers t
-        ivy-count-format "%d/%d ")
+        ivy-count-format "%d/%d "
+        ivy-re-builders-alist
+        '((read-file-name-internal . ivy--regex-fuzzy)
+          (t . ivy--regex-plus)))
+  :config
+  (ivy-mode 1)
   (global-set-key "\C-s" 'swiper)
   (global-set-key (kbd "C-c C-r") 'ivy-resume)
   (global-set-key (kbd "<f6>") 'ivy-resume)
@@ -110,6 +116,10 @@
   (global-set-key (kbd "C-c k") 'counsel-rg)
   (global-set-key (kbd "C-x l") 'counsel-locate)
   (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
+  )
+
+(use-package swiper
+  :ensure t
 )
 
 (use-package projectile
@@ -167,7 +177,7 @@
 (use-package doom-themes
   :ensure t
   :config
-  (load-theme 'doom-nord))
+  (load-theme 'nord))
 
 (use-package doom-modeline
       :ensure t
@@ -181,54 +191,67 @@
                   evil-visual-state-tag   (propertize "<V>" 'face '((:background "grey80" :foreground "black")))
                   evil-operator-state-tag (propertize "<O>" 'face '((:background "purple"))))
       :hook (after-init . doom-modeline-mode))
-
-;; (use-package nord-theme 
-;;   :ensure t 
-;;   :load-path "themes"
-;;   :config
-;;   (load-theme 'nord t))
-
-;; (use-package spaceline
-;;   :ensure t
-;;   :init
-;;   (require 'spaceline-config)
-;;   (setq spaceline-highlight-face-func 'spaceline-highlight-face-evil-state)
-;;   :config
-;;   (spaceline-spacemacs-theme)
-;; )
+(use-package highlight-indent-guides
+  :ensure t
+  :init (setq highlight-indent-guides-method 'column)
+  :hook ((prog-mode docker-compose-mode) . highlight-indent-guides-mode)
+  )
 
 ;; LANGUAGES
 (use-package lsp-mode
- :init (setq lsp-prefer-flymake nil))
+  :hook (scala-mode . lsp)
+  :hook (rust-mode . lsp)
+  :init (setq lsp-prefer-flymake nil))
 
 (use-package lsp-ui)
 
 ;; Add company-lsp backend for metals
 (use-package company-lsp)
 
-;; ;; Enable scala-mode and sbt-mode
-;; (use-package scala-mode
-;;   :mode "\\.s\\(cala\\|bt\\)$")
-;; 
-;; (use-package sbt-mode
-;;   :commands sbt-start sbt-command
-;;   :config
-;;   ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
-;;   ;; allows using SPACE when in the minibuffer
-;;   (substitute-key-definition
-;;    'minibuffer-complete-word
-;;    'self-insert-command
-;;    minibuffer-local-completion-map))
-;; 
-;; (use-package lsp-scala
-;;   :after scala-mode
-;;   :demand t
-;;   ;; Optional - enable lsp-scala automatically in scala files
-;;   :hook (scala-mode . lsp))
-;; 
-;; (use-package dockerfile-mode :ensure t)
-;; (use-package docker-compose-mode :ensure t)
-;; (use-package groovy-mode
-;;   :ensure t
-;;   :mode "Jenkinsfile")
-;; 
+
+;; SCALA
+(use-package scala-mode
+  :mode "\\.s\\(cala\\|bt\\)$")
+
+(use-package sbt-mode
+  :commands sbt-start sbt-command
+  :config
+  ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
+  ;; allows using SPACE when in the minibuffer
+  (substitute-key-definition
+   'minibuffer-complete-word
+   'self-insert-command
+   minibuffer-local-completion-map)
+   ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
+   (setq sbt:program-options '("-Dsbt.supershell=false"))
+)
+
+;; RUST
+(use-package rust-mode
+  :ensure t)
+
+;; Add keybindings for interacting with Cargo
+(use-package cargo
+  :hook (rust-mode . cargo-minor-mode))
+
+;; TOML
+(use-package toml-mode)
+
+;; HASKELL
+(use-package dante
+  :ensure t
+  :after haskell-mode
+  :commands 'dante-mode
+  :init
+  (add-hook 'haskell-mode-hook 'flycheck-mode)
+  ;; OR:
+  ;; (add-hook 'haskell-mode-hook 'flymake-mode)
+  (add-hook 'haskell-mode-hook 'dante-mode)
+  )
+
+;; Other niceties
+(use-package dockerfile-mode :ensure t)
+(use-package docker-compose-mode :ensure t)
+(use-package groovy-mode
+  :ensure t
+  :mode "Jenkinsfile")
