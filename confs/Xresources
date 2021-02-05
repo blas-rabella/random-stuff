@@ -1,4 +1,11 @@
 ! Dracula Xresources palette
+! bObObOb
+! bObObOb
+! bObOb
+! bOb
+! b
+! b
+! b
 ! *.foreground: #F8F8F2
 ! *.background: #282A36
 ! *.color0:     #000000
@@ -77,8 +84,8 @@ Urxvt.lineSpace : -1
 URxvt.antialias : true
 
 
-urxvt*depth: 32
-urxvt*background: rgba:0028/002A/0036/aa00
+URxvt*depth: 32
+URxvt*background: [90]#2E3440
 !! Scrollbar
 !URxvt.scrollStyle:      rxvt
 

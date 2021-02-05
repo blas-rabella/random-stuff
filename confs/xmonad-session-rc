@@ -1,9 +1,14 @@
 #!/bin/sh
 
 xrdb .Xresources &
-~/stuff/compton/compton --blur-background --blur-method kawase --blur-strength 10 --opacity-rule 95:'class_g *?="URxvt"' --backend glx --paint-on-overlay --vsync opengl-swc --blur-kern 3x3box --inactive-opacity 0.65 --inactive-dim .10 --active-opacity 1.0 & 
+# ~/stuff/compton/compton --blur-background --blur-method kawase --blur-strength 10 --opacity-rule 95:'class_g *?="URxvt"' --backend glx --paint-on-overlay --vsync opengl-swc --blur-kern 3x3box --inactive-opacity 0.65 --inactive-dim .10 --active-opacity 1.0 & 
 feh --bg-fill look/wallpaper.jpg &
-
+picom --experimental-backends --backend glx -b &
 polybar top &
 nm-applet &
 blueman-applet &
+xfce4-power-manager-settings &
+xfce4-volumed &
+ibus-daemon &
+
+exec dbus-launch --sh-syntax --exit-with-session /home/b.rabella/.xmonad/xmonad-x86_64-linux

@@ -32,7 +32,7 @@
                     ("org" . "http://orgmode.org/elpa/")
                     ("melpa" . "http://melpa.org/packages/")
                     ("melpa-stable" . "http://stable.melpa.org/packages/"))
- package-archive-priorities '(("melpa-stable" . 1)))
+ package-archive-priorities '(("melpa" . 1)))
 
 (package-initialize)
 (when (not package-archive-contents)
@@ -177,7 +177,7 @@
 (use-package doom-themes
   :ensure t
   :config
-  (load-theme 'nord))
+  (load-theme 'doom-nord))
 
 (use-package doom-modeline
       :ensure t
@@ -197,61 +197,226 @@
   :hook ((prog-mode docker-compose-mode) . highlight-indent-guides-mode)
   )
 
-;; LANGUAGES
-(use-package lsp-mode
-  :hook (scala-mode . lsp)
-  :hook (rust-mode . lsp)
-  :init (setq lsp-prefer-flymake nil))
-
-(use-package lsp-ui)
-
-;; Add company-lsp backend for metals
-(use-package company-lsp)
-
-
-;; SCALA
-(use-package scala-mode
-  :mode "\\.s\\(cala\\|bt\\)$")
-
-(use-package sbt-mode
-  :commands sbt-start sbt-command
+(use-package treemacs
+  :ensure t
+  :defer t
+  :init
+  (with-eval-after-load 'winum
+    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
-  ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
-  ;; allows using SPACE when in the minibuffer
-  (substitute-key-definition
-   'minibuffer-complete-word
-   'self-insert-command
-   minibuffer-local-completion-map)
-   ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
-   (setq sbt:program-options '("-Dsbt.supershell=false"))
-)
+  (progn
+    (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+          treemacs-deferred-git-apply-delay      0.5
+          treemacs-directory-name-transformer    #'identity
+          treemacs-display-in-side-window        t
+          treemacs-eldoc-display                 t
+          treemacs-file-event-delay              5000
+          treemacs-file-extension-regex          treemacs-last-period-regex-value
+          treemacs-file-follow-delay             0.2
+          treemacs-file-name-transformer         #'identity
+          treemacs-follow-after-init             t
+          treemacs-git-command-pipe              ""
+          treemacs-goto-tag-strategy             'refetch-index
+          treemacs-indentation                   2
+          treemacs-indentation-string            " "
+          treemacs-is-never-other-window         nil
+          treemacs-max-git-entries               5000
+          treemacs-missing-project-action        'ask
+          treemacs-move-forward-on-expand        nil
+          treemacs-no-png-images                 nil
+          treemacs-no-delete-other-windows       t
+          treemacs-project-follow-cleanup        nil
+          treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+          treemacs-position                      'left
+          treemacs-recenter-distance             0.1
+          treemacs-recenter-after-file-follow    nil
+          treemacs-recenter-after-tag-follow     nil
+          treemacs-recenter-after-project-jump   'always
+          treemacs-recenter-after-project-expand 'on-distance
+          treemacs-show-cursor                   nil
+          treemacs-show-hidden-files             t
+          treemacs-silent-filewatch              nil
+          treemacs-silent-refresh                nil
+          treemacs-sorting                       'alphabetic-asc
+          treemacs-space-between-root-nodes      t
+          treemacs-tag-follow-cleanup            t
+          treemacs-tag-follow-delay              1.5
+          treemacs-user-mode-line-format         nil
+          treemacs-user-header-line-format       nil
+          treemacs-width                         35
+          treemacs-workspace-switch-cleanup      nil)
 
-;; RUST
-(use-package rust-mode
+    ;; The default width and height of the icons is 22 pixels. If you are
+    ;; using a Hi-DPI display, uncomment this to double the icon size.
+    ;;(treemacs-resize-icons 44)
+
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode t)
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null treemacs-python-executable)))
+      (`(t . t)
+       (treemacs-git-mode 'deferred))
+      (`(t . _)
+       (treemacs-git-mode 'simple))))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
+(use-package treemacs-projectile
+  :after treemacs projectile
   :ensure t)
 
-;; Add keybindings for interacting with Cargo
-(use-package cargo
-  :hook (rust-mode . cargo-minor-mode))
-
-;; TOML
-(use-package toml-mode)
-
-;; HASKELL
-(use-package dante
+(use-package treemacs-icons-dired
+  :after treemacs dired
   :ensure t
-  :after haskell-mode
-  :commands 'dante-mode
-  :init
-  (add-hook 'haskell-mode-hook 'flycheck-mode)
-  ;; OR:
-  ;; (add-hook 'haskell-mode-hook 'flymake-mode)
-  (add-hook 'haskell-mode-hook 'dante-mode)
-  )
+  :config (treemacs-icons-dired-mode))
 
-;; Other niceties
-(use-package dockerfile-mode :ensure t)
-(use-package docker-compose-mode :ensure t)
-(use-package groovy-mode
-  :ensure t
-  :mode "Jenkinsfile")
+(use-package treemacs-magit
+  :after treemacs magit
+  :ensure t)
+(use-package lsp-treemacs)
+
+;; ;; LANGUAGES
+;; (use-package lsp-mode
+;;   :hook (scala-mode . lsp)
+;;   :hook (rust-mode . lsp)
+;;   :hook (elm-mode . lsp)
+;;   :hook (lsp-mode . lsp-lens-mode)
+;;   :init (setq lsp-prefer-flymake nil
+;;               lsp-keep-workspace-alive nil))
+
+;; (use-package lsp-ui
+;;   :ensure t)
+
+;; (use-package posframe
+;;   :ensure t
+;;   ;; Posframe is a pop-up tool that must be manually installed for dap-mode
+;;   )
+
+;; (use-package dap-mode
+;;   :ensure t
+;;   :hook
+;;   (lsp-mode . dap-mode)
+;;   (lsp-mode . dap-ui-mode)
+;;   )
+
+;; ;; Add company-lsp backend for metals
+;; (use-package company-lsp
+;;   :ensure t
+;;   ;; :config (push 'company-lsp company-backends)
+;;   :config (setq company-lsp-cache-candidates 'auto
+;;         company-lsp-enable-recompletion t))
+
+;; ;; SCALA
+;; (use-package scala-mode
+;;   :mode "\\.s\\(cala\\|bt\\)$"
+;;   :interpreter ("scala" . scala-mode))
+
+;; (use-package sbt-mode
+;;   :commands sbt-start sbt-command
+;;   :config
+;;   ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
+;;   ;; allows using SPACE when in the minibuffer
+;;   (substitute-key-definition
+;;    'minibuffer-complete-word
+;;    'self-insert-command
+;;    minibuffer-local-completion-map)
+;;    ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
+;;    (setq sbt:program-options '("-Dsbt.supershell=false"))
+;; )
+;; ;; Add metals backend for lsp-mode
+;; (use-package lsp-metals
+;;   :config (setq lsp-metals-treeview-show-when-views-received t))
+
+
+
+;; ;; RUST
+;; (use-package rust-mode
+;;   :ensure t
+;; )
+;; ;; Add keybindings for interacting with Cargo
+;; (use-package cargo
+;;   :hook (rust-mode . cargo-minor-mode))
+
+;; (use-package flycheck-rust
+;;   :config (add-hook 'flycheck-mode-hook #'flycheck-rust-setup))
+
+;; ;; Add keybindings for interacting with Cargo
+;; (use-package cargo
+;;   :hook (rust-mode . cargo-minor-mode))
+
+;; ;; TOML
+;; (use-package toml-mode)
+
+;; ;; DAHLl
+;; (use-package dhall-mode
+;;   :ensure t)
+
+;; ;; NIX
+;; (use-package nix-mode
+;;   :ensure t)
+
+;; ;; HASKELL
+;; (use-package lsp-haskell
+;;  :ensure t
+;;  :config (setq lsp-haskell-server-path "/home/b.rabella/.ghcup/bin/haskell-language-server-wrapper")
+;;  :hook (add-hook 'haskell-mode-hook #'lsp)
+;;  :hook (add-hook 'haskell-literate-mode-hook #'lsp)
+;;  ;; Comment/uncomment this line to see interactions between lsp client/server.
+;;  ;;(setq lsp-log-io t)
+;; )
+
+;; ;; PYTHON
+;; ;; (use-package lsp-python-ms
+;; ;;   :ensure t
+;; ;;   :hook (python-mode . (lambda ()
+;; ;;                           (require 'lsp-python-ms)
+;; ;;                           (lsp))))
+;; (use-package lsp-python-ms
+;;   :ensure t
+;;   :init (setq lsp-python-ms-auto-install-server t)
+;;   :hook (python-mode . (lambda ()
+;;                           (require 'lsp-python-ms)
+;;                           (lsp))))  ; or lsp-deferred
+;; ;; JAVA
+;; ;; (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
+
+;; ;; ELM
+
+;; (use-package elm-mode
+;;   :ensure t)
+
+;; ;; Other niceties
+;; (use-package dockerfile-mode :ensure t)
+;; (use-package docker-compose-mode :ensure t)
+;; (use-package groovy-mode
+;;   :ensure t
+;;   :mode "Jenkinsfile")
+;; 
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(column-number-mode t)
+ '(custom-safe-themes
+   (quote
+    ("a70b47c87e9b0940f6fece46656200acbfbc55e129f03178de8f50934ac89f58" "2f945b8cbfdd750aeb82c8afb3753ebf76a1c30c2b368d9d1f13ca3cc674c7bc" "53993d7dc1db7619da530eb121aaae11c57eaf2a2d6476df4652e6f0bd1df740" "f0a76ae259b7be77e59f98501957eb45a10af0839dd9eb29fdd5691ed74771d4" "f47f2c6b2052c81ecf8f2da64f481a92b53a3fd17680b054ea9b81c916dee4b9" "b69323309e5839676409607f91c69da2bf913914321c995f63960c3887224848" "1f36ca86913068b7d8377a327394eecfff71be34119619f779cb229875ceec0c" "4ea1959cfaa526b795b45e55f77724df4be982b9cd33da8d701df8cdce5b2955" "0eb3c0868ff890b0c4ee138069ce2a8936a8a69ba150efa6bfb9fb7c05af5ec3" "c5ad91387427abc66af38b8d6ea74cade4e3734129cbcb0c34cc90985d06dcb3" "2296db63b1de14e65390d0ded8e2b5df4b9e4186f3251af56807026542a58201" "11986184025c9e658eeff90e95ab8e9592f40b3564a5854f9ce1eab1804abd79" "b46ee2c193e350d07529fcd50948ca54ad3b38446dcbd9b28d0378792db5c088" "f0dc4ddca147f3c7b1c7397141b888562a48d9888f1595d69572db73be99a024" "d7441a80851d30a369268e50bbad6777a82ff37405f70328f21a8f30a7c6e31d" "a22f40b63f9bc0a69ebc8ba4fbc6b452a4e3f84b80590ba0a92b4ff599e53ad0" "fe666e5ac37c2dfcf80074e88b9252c71a22b6f5d2f566df9a7aa4f9bea55ef8" "b35a14c7d94c1f411890d45edfb9dc1bd61c5becd5c326790b51df6ebf60f402" default)))
+ '(package-selected-packages
+   (quote
+    (minizinc-mode jenkinsfile-mode py-isort dhall-mode nix-mode transpose-frame ace-window kaolin-themes darkokai-theme cyberpunk-theme cyberpunk-2019-theme seoul256-theme base16-theme metalheart-theme yapfify virtualenv auto-virtualenv feature-mode ecukes rainbow-mode lua-mode dracula-theme gotham-theme nord-theme gruvbox-theme haskell-mode company-lsp lsp-ui lsp-mode doom-modeline yasnippet-snippets use-package magit flycheck evil-leader doom-themes counsel-projectile company-quickhelp)))
+ '(projectile-completion-system (quote ivy))
+ '(scroll-bar-mode nil)
+ '(tool-bar-mode nil)
+ '(tooltip-mode nil))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:family "Iosevka Term" :foundry "CYEL" :slant normal :weight normal :height 113 :width normal)))))
