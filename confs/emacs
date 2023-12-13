@@ -24,7 +24,8 @@
 
 ;; global keybindings
 (global-unset-key (kbd "C-z"))
-
+(global-set-key [C-wheel-up] 'text-scale-increase)
+(global-set-key [C-wheel-down] 'text-scale-decrease)
 ;; the package manager
 (require 'package)
 (setq
@@ -57,6 +58,7 @@
 (use-package company
   :ensure t
   :defer t
+  :hook (scala-mode . company-mode)
   :init (global-company-mode)
   :config
   (progn
@@ -67,6 +69,7 @@
           ;; Easy navigation to candidates with M-<n>
           company-show-numbers t)
     (setq company-dabbrev-downcase nil))
+  (setq lsp-completion-provider :capf)
   :diminish company-mode)
 
 (use-package company-quickhelp          ; Documentation popups for Company
@@ -90,7 +93,7 @@
 (use-package counsel-projectile
   :ensure t
   :config
-(counsel-projectile-mode))
+  (counsel-projectile-mode))
 
 (use-package ivy :ensure t
   :init
@@ -118,6 +121,14 @@
   (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
   )
 
+(use-package all-the-icons-ivy-rich
+  :ensure t
+  :init (all-the-icons-ivy-rich-mode 1))
+
+(use-package ivy-rich
+  :ensure t
+  :init (ivy-rich-mode 1))
+
 (use-package swiper
   :ensure t
 )
@@ -127,6 +138,10 @@
   :config
   (projectile-global-mode)
   (setq projectile-enable-caching t)
+  (projectile-register-project-type 'haskell '("Setup.hs" "app")
+                                    :project-file "Setup.hs"
+                                    :compile "cabal build"
+                                    )
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map))
   :custom
@@ -174,28 +189,93 @@
       (evil-set-initial-state `,(car mode-map) `,(cdr mode-map)))))
 
 ;; UI
-(use-package doom-themes
+;; Hydras
+(use-package hydra
+  :ensure t)
+(use-package use-package-hydra
+  :ensure t)
+;; Focus package https://github.com/larstvei/Focus
+
+(use-package focus
+  :ensure t
+  :after hydra
+  :bind ("C-c f" . hydra-focus/body)
+  :hydra (hydra-focus (:hint nil)
+  "
+  _a_: activate _p_: pin _u_: unpin _c_: change _n_: next _m_: previous  "
+  ("a" focus-mode)
+  ("c" focus-change-thing)
+  ("p" focus-pin)
+  ("u" focus-unpin)
+  ("n" focus-next-thing)
+  ("m"vfocus-prev-thing)))
+
+(defhydra hydra-zoom (global-map "<f2>")
+    "zoom"
+    ("g" text-scale-increase "in")
+    ("l" text-scale-decrease "out"))
+
+(use-package dashboard
+  :ensure t
+  :init (setq dashboard-center-content t
+              dashboard-items '((recents . 5)
+                                (projects . 5)
+                                (agenda . 5))
+              dashboard-projects-switch-function 'counsel-projectile-switch-project-by-name
+              )
+  :config
+  (dashboard-setup-startup-hook))
+
+(use-package which-key
   :ensure t
   :config
-  (load-theme 'doom-nord))
+  (progn (which-key-mode)
+         (which-key-setup-minibuffer))
+  )
+
+;; ORG MODE
+(require 'org)
+(define-key global-map "\C-cl" 'org-store-link)
+(define-key global-map "\C-ca" 'org-agenda)
+(setq org-log-done t)
+(setq org-agenda-files (list "~/org/work.org"
+                             "~/org/home.org"))
+
+
+;; LOOKS
+;; (use-package doom-themes
+;;   :ensure t
+;;   :config
+;;   (load-theme 'doom-dracula))
+
+(use-package catppuccin-theme
+  :ensure t
+  :init (setq catppuccin-flavor 'macchiato)
+  :config (load-theme 'catppuccin :no-confirm))
 
 (use-package doom-modeline
       :ensure t
       :init (setq doom-modeline-checker-simple-format nil
                   doom-modeline-lsp t
-                  doom-modeline-buffer-file-name-style 'relative-from-project
-                  evil-normal-state-tag   (propertize "<N>" 'face '((:background "green" :foreground "black")))
-                  evil-emacs-state-tag    (propertize "<E>" 'face '((:background "orange" :foreground "black")))
-                  evil-insert-state-tag   (propertize "<I>" 'face '((:background "red") :foreground "white"))
-                  evil-motion-state-tag   (propertize "<M>" 'face '((:background "blue") :foreground "white"))
-                  evil-visual-state-tag   (propertize "<V>" 'face '((:background "grey80" :foreground "black")))
-                  evil-operator-state-tag (propertize "<O>" 'face '((:background "purple"))))
+                  doom-modeline-minor-modes t
+                  doom-modeline-buffer-file-name-style 'relative-from-project)
       :hook (after-init . doom-modeline-mode))
+
+(use-package minions
+  :ensure t
+  :config (minions-mode 1))
+
 (use-package highlight-indent-guides
   :ensure t
   :init (setq highlight-indent-guides-method 'column)
-  :hook ((prog-mode docker-compose-mode) . highlight-indent-guides-mode)
+  :hook ((prog-mode docker-compose-mode yaml-mode) . highlight-indent-guides-mode)
   )
+
+
+(use-package all-the-icons
+  :ensure t)
+(use-package all-the-icons-ivy-rich
+  :ensure t)
 
 (use-package treemacs
   :ensure t
@@ -276,70 +356,128 @@
   :ensure t
   :config (treemacs-icons-dired-mode))
 
-(use-package treemacs-magit
-  :after treemacs magit
-  :ensure t)
-(use-package lsp-treemacs)
-
-;; ;; LANGUAGES
-;; (use-package lsp-mode
-;;   :hook (scala-mode . lsp)
-;;   :hook (rust-mode . lsp)
-;;   :hook (elm-mode . lsp)
-;;   :hook (lsp-mode . lsp-lens-mode)
-;;   :init (setq lsp-prefer-flymake nil
-;;               lsp-keep-workspace-alive nil))
-
-;; (use-package lsp-ui
+;; (use-package treemacs-magit
+;;   :after treemacs magit
 ;;   :ensure t)
-
-;; (use-package posframe
-;;   :ensure t
-;;   ;; Posframe is a pop-up tool that must be manually installed for dap-mode
-;;   )
-
-;; (use-package dap-mode
-;;   :ensure t
-;;   :hook
-;;   (lsp-mode . dap-mode)
-;;   (lsp-mode . dap-ui-mode)
-;;   )
-
-;; ;; Add company-lsp backend for metals
-;; (use-package company-lsp
-;;   :ensure t
-;;   ;; :config (push 'company-lsp company-backends)
-;;   :config (setq company-lsp-cache-candidates 'auto
-;;         company-lsp-enable-recompletion t))
-
-;; ;; SCALA
-;; (use-package scala-mode
-;;   :mode "\\.s\\(cala\\|bt\\)$"
-;;   :interpreter ("scala" . scala-mode))
-
-;; (use-package sbt-mode
-;;   :commands sbt-start sbt-command
-;;   :config
-;;   ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
-;;   ;; allows using SPACE when in the minibuffer
-;;   (substitute-key-definition
-;;    'minibuffer-complete-word
-;;    'self-insert-command
-;;    minibuffer-local-completion-map)
-;;    ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
-;;    (setq sbt:program-options '("-Dsbt.supershell=false"))
-;; )
-;; ;; Add metals backend for lsp-mode
-;; (use-package lsp-metals
-;;   :config (setq lsp-metals-treeview-show-when-views-received t))
+;; ;
+                                        ; (use-package lsp-treemacs)
 
 
+;; LANGUAGES
+(use-package lsp-mode
+  :hook (scala-mode . lsp)
+  :hook (rust-mode . lsp)
+  :hook (clojure-mode . lsp)
+  :hook (haskell-mode . lsp)
+  :hook (elm-mode . lsp)
+  :hook (purescript-mode . lsp)
+  :hook (lsp-mode . lsp-lens-mode)
+  :init (setq lsp-prefer-flymake nil
+              lsp-keep-workspace-alive nil)
+  :custom
+  ;; what to use when checking on-save. "check" is default, I prefer clippy
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-eldoc-render-all t)
+  (lsp-idle-delay 0.6)
+  (lsp-rust-analyzer-server-display-inlay-hints t)
+  :config
+  (add-hook 'lsp-mode-hook 'lsp-ui-mode)
+  )
 
-;; ;; RUST
+(use-package lsp-ui
+  :ensure
+  :commands lsp-ui-mode
+  :custom
+  (lsp-ui-peek-always-show t)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-doc-enable nil))
+
+(use-package posframe
+  :ensure t
+  ;; Posframe is a pop-up tool that must be manually installed for dap-mode
+  )
+
+(use-package dap-mode
+  :ensure t
+  :hook
+  (lsp-mode . dap-mode)
+  (lsp-mode . dap-ui-mode)
+  )
+
+(use-package tree-sitter
+  :ensure t
+  :config
+  (global-tree-sitter-mode)
+  :hook
+  (rust-mode . tree-sitter-hl-mode)
+  (python-mode . tree-sitter-hl-mode)
+  (scala-mode . tree-sitter-hl-mode)
+  ;(Haskell-mode . tree-sitter-hl-mode)
+  (bash-mode . tree-sitter-hl-mode)
+  (elm-mode . tree-sitter-hl-mode)
+  )
+
+(use-package tree-sitter-langs
+  :ensure t
+  :custom (push '(haskell-mode . haskell) tree-sitter-major-mode-language-alist)
+  )
+
+;; SCALA
+(use-package scala-mode
+  :mode "\\.s\\(cala\\|bt\\)$"
+  :interpreter ("scala" . scala-mode))
+
+(use-package sbt-mode
+  :commands sbt-start sbt-command
+  :config
+  ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
+  ;; allows using SPACE when in the minibuffer
+  (substitute-key-definition
+   'minibuffer-complete-word
+   'self-insert-command
+   minibuffer-local-completion-map)
+   ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
+   (setq sbt:program-options '("-Dsbt.supershell=false"))
+)
+
+;; HASKELL
+(use-package haskell-mode
+  :ensure t)
+
+;; PURESCRIPT
+(use-package purescript-mode
+  :ensure t)
+
+;; RUST
 ;; (use-package rust-mode
 ;;   :ensure t
 ;; )
-;; ;; Add keybindings for interacting with Cargo
+(use-package rustic
+  :ensure
+  :bind (:map rustic-mode-map
+              ("M-j" . lsp-ui-imenu)
+              ("M-?" . lsp-find-references)
+              ("C-c C-c l" . flycheck-list-errors)
+              ("C-c C-c a" . lsp-execute-code-action)
+              ("C-c C-c r" . lsp-rename)
+              ("C-c C-c q" . lsp-workspace-restart)
+              ("C-c C-c Q" . lsp-workspace-shutdown)
+              ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t)
+  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+
+(defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm
+  (setq-local buffer-save-without-query t))
+
+;; Add keybindings for interacting with Cargo
 ;; (use-package cargo
 ;;   :hook (rust-mode . cargo-minor-mode))
 
@@ -350,73 +488,77 @@
 ;; (use-package cargo
 ;;   :hook (rust-mode . cargo-minor-mode))
 
-;; ;; TOML
-;; (use-package toml-mode)
+;; TOML
+(use-package toml-mode)
 
-;; ;; DAHLl
-;; (use-package dhall-mode
-;;   :ensure t)
+;; DAHLl
+(use-package dhall-mode
+  :ensure t)
 
-;; ;; NIX
-;; (use-package nix-mode
-;;   :ensure t)
+;; NIX
+(use-package nix-mode
+  :ensure t)
 
-;; ;; HASKELL
-;; (use-package lsp-haskell
-;;  :ensure t
-;;  :config (setq lsp-haskell-server-path "/home/b.rabella/.ghcup/bin/haskell-language-server-wrapper")
-;;  :hook (add-hook 'haskell-mode-hook #'lsp)
-;;  :hook (add-hook 'haskell-literate-mode-hook #'lsp)
-;;  ;; Comment/uncomment this line to see interactions between lsp client/server.
-;;  ;;(setq lsp-log-io t)
-;; )
+(use-package go-mode
+  :ensure t)
 
-;; ;; PYTHON
-;; ;; (use-package lsp-python-ms
-;; ;;   :ensure t
-;; ;;   :hook (python-mode . (lambda ()
-;; ;;                           (require 'lsp-python-ms)
-;; ;;                           (lsp))))
+;; Clojure
+(use-package cider
+  :ensure t)
+
+
+;; PYTHON
+;; (use-package lsp-python-ms
+;;   :ensure t
+;;   :hook (python-mode . (lambda ()
+;;                           (require 'lsp-python-ms)
+;;                           (lsp))))
 ;; (use-package lsp-python-ms
 ;;   :ensure t
 ;;   :init (setq lsp-python-ms-auto-install-server t)
 ;;   :hook (python-mode . (lambda ()
 ;;                           (require 'lsp-python-ms)
 ;;                           (lsp))))  ; or lsp-deferred
-;; ;; JAVA
-;; ;; (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
+;; JAVA
+;; (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
 
-;; ;; ELM
+;; ELM
 
-;; (use-package elm-mode
+(use-package elm-mode
+  :ensure t)
+
+;; Other niceties
+(use-package dockerfile-mode :ensure t)
+(use-package docker-compose-mode :ensure t)
+(use-package groovy-mode
+  :ensure t
+  :mode "Jenkinsfile")
+;; 
+ ;; SCALA LSP
+(use-package lsp-metals
+  :ensure t
+  )
+;; HASKELL LSP
+(use-package lsp-haskell
+ :ensure t
+ ;; :config (setq lsp-haskell-server-path "/home/b.rabella/.ghcup/bin/haskell-language-server-wrapper")
+ ;; Comment/uncomment this line to see interactions between lsp client/server.
+ ;;(setq lsp-log-io t)
+)
+
+;; EGLOT
+
+;; (use-package eglot
+;;   :ensure t
+;;   ;; (optional) Automatically start metals for Scala files.
+;;   :hook (scala-mode . eglot-ensure)
+;;   :hook (haskell-mode . eglot-ensure)
+;;   :custom
+;; (add-to-list 'eglot-server-programs
+;;              `(haskell-mode . ("/home/b.rabella/.ghcup/bin/haskell-language-server-wrapper")))
+;;   )
+
+;; (use-package flymake
 ;;   :ensure t)
 
-;; ;; Other niceties
-;; (use-package dockerfile-mode :ensure t)
-;; (use-package docker-compose-mode :ensure t)
-;; (use-package groovy-mode
-;;   :ensure t
-;;   :mode "Jenkinsfile")
-;; 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(column-number-mode t)
- '(custom-safe-themes
-   (quote
-    ("a70b47c87e9b0940f6fece46656200acbfbc55e129f03178de8f50934ac89f58" "2f945b8cbfdd750aeb82c8afb3753ebf76a1c30c2b368d9d1f13ca3cc674c7bc" "53993d7dc1db7619da530eb121aaae11c57eaf2a2d6476df4652e6f0bd1df740" "f0a76ae259b7be77e59f98501957eb45a10af0839dd9eb29fdd5691ed74771d4" "f47f2c6b2052c81ecf8f2da64f481a92b53a3fd17680b054ea9b81c916dee4b9" "b69323309e5839676409607f91c69da2bf913914321c995f63960c3887224848" "1f36ca86913068b7d8377a327394eecfff71be34119619f779cb229875ceec0c" "4ea1959cfaa526b795b45e55f77724df4be982b9cd33da8d701df8cdce5b2955" "0eb3c0868ff890b0c4ee138069ce2a8936a8a69ba150efa6bfb9fb7c05af5ec3" "c5ad91387427abc66af38b8d6ea74cade4e3734129cbcb0c34cc90985d06dcb3" "2296db63b1de14e65390d0ded8e2b5df4b9e4186f3251af56807026542a58201" "11986184025c9e658eeff90e95ab8e9592f40b3564a5854f9ce1eab1804abd79" "b46ee2c193e350d07529fcd50948ca54ad3b38446dcbd9b28d0378792db5c088" "f0dc4ddca147f3c7b1c7397141b888562a48d9888f1595d69572db73be99a024" "d7441a80851d30a369268e50bbad6777a82ff37405f70328f21a8f30a7c6e31d" "a22f40b63f9bc0a69ebc8ba4fbc6b452a4e3f84b80590ba0a92b4ff599e53ad0" "fe666e5ac37c2dfcf80074e88b9252c71a22b6f5d2f566df9a7aa4f9bea55ef8" "b35a14c7d94c1f411890d45edfb9dc1bd61c5becd5c326790b51df6ebf60f402" default)))
- '(package-selected-packages
-   (quote
-    (minizinc-mode jenkinsfile-mode py-isort dhall-mode nix-mode transpose-frame ace-window kaolin-themes darkokai-theme cyberpunk-theme cyberpunk-2019-theme seoul256-theme base16-theme metalheart-theme yapfify virtualenv auto-virtualenv feature-mode ecukes rainbow-mode lua-mode dracula-theme gotham-theme nord-theme gruvbox-theme haskell-mode company-lsp lsp-ui lsp-mode doom-modeline yasnippet-snippets use-package magit flycheck evil-leader doom-themes counsel-projectile company-quickhelp)))
- '(projectile-completion-system (quote ivy))
- '(scroll-bar-mode nil)
- '(tool-bar-mode nil)
- '(tooltip-mode nil))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:family "Iosevka Term" :foundry "CYEL" :slant normal :weight normal :height 113 :width normal)))))
+
