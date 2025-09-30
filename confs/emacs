@@ -9,13 +9,22 @@
  ;; use-package-always-ensure t
  sentence-end-double-space nil
  custom-safe-themes t
- ns-alternate-modifier 'meta
- ns-command-modifier 'control
- ns-right-alternate-modifier 'meta
- ns-right-command-modifier 'super
+ ;; ns-alternate-modifier 'meta
+ ;; ns-command-modifier 'control
+ ;; ns-right-alternate-modifier 'meta
+ ;; ns-right-command-modifier 'super
+ mac-option-modifier 'meta
  gc-cons-threshold 8000000
+ xref-search-program 'ripgrep
+ calendar-latitude 41.3874
+ calendar-longitude 2.1686
  )
-
+;;(menu-bar-mode t)
+(setq mac-option-key-is-meta nil
+      mac-command-key-is-meta t
+      mac-command-modifier 'meta
+      mac-option-modifier 'none
+      menu-bar-mode t)
 (setenv "LANG" "en_US.UTF-8")
 
 ;; buffer local variables
@@ -29,7 +38,8 @@
 (electric-indent-mode 1)
 (electric-pair-mode 1)
 (global-display-line-numbers-mode t)
-(dirvish-override-dired-mode)
+(global-hl-todo-mode t)
+
 ;; Extras
 (require 'homebrewing)
 ;; global keybindings
@@ -51,6 +61,25 @@
   (package-install 'use-package))
 (require 'use-package)
 
+;; A few more useful configurations...
+(use-package emacs
+  :custom
+  ;; TAB cycle if there are only few candidates
+  ;; (completion-cycle-threshold 3)
+
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (tab-always-indent 'complete)
+
+  ;; Emacs 30 and newer: Disable Ispell completion function.
+  ;; Try `cape-dict' as an alternative.
+  (text-mode-ispell-word-completion nil)
+
+  ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+  ;; commands are hidden, since they are not used via M-x. This setting is
+  ;; useful beyond Corfu.
+  (read-extended-command-predicate #'command-completion-default-include-p))
+
 (use-package exec-path-from-shell
   :ensure t
   :if (memq window-system '(mac ns x))
@@ -61,6 +90,9 @@
 ;; TOOLS
 (use-package nerd-icons)
 (use-package dirvish
+  :defer t
+  :init
+  (dirvish-override-dired-mode)
   :config
   (setq dirvish-mode-line-format
         '(:left (sort symlink) :right (omit yank index)))
@@ -93,14 +125,27 @@
   :init
   (setq auth-sources '("~/.authinfo")))
 
+;; (use-package magit-todos
+;;   :after magit
+;;   :config (magit-todos-mode 1))
+
+(use-package difftastic-bindings
+  :ensure difftastic ;; or nil if you prefer manual installation
+  :config (difftastic-bindings-mode))
+
 (use-package flycheck
   :defer t
   :init (global-flycheck-mode)
   (setq flycheck-global-modes '(not haskell-mode)))
 
+;; spell checking
+(use-package jinx
+  :hook (emacs-startup . global-jinx-mode)
+  :bind (("C-c s c" . jinx-correct)
+         ("C-c s l" . jinx-languages)))
 
 (use-package corfu
-  ;; Optional customizations
+  ;; Optional customization
   :after orderless
   :custom
   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -230,7 +275,7 @@
          ("M-y" . consult-yank-pop)                ;; orig. yank-pop
          ;; M-g bindings in `goto-map'
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flycheck
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -328,14 +373,11 @@
   ;;;; 5. No project support
   ;; (setq consult-project-function nil)
   )
-
                                         ;(use-package consult-eglot
                                         ;  )
-
 ;; (use-package consult-projectile
 ;;   :bind (("M-p" . consult-projectile)))
-
-
+(use-package consult-todo)
 
 ;; Enable vertico
 (use-package vertico
@@ -353,7 +395,10 @@
 
   ;; Optionally enable cycling for `vertico-next' and `vertico-previous'.
   ;; (setq vertico-cycle t)
+  :config
+  (setq vertico-multiform-categories `((jinx grid (vertico-grid-annotate . 20) (vertico-count . 4))))
   )
+
 (use-package vertico-directory
   :after vertico
   ;; More convenient directory navigation commands
@@ -363,9 +408,7 @@
               ("M-DEL" . vertico-directory-delete-word))
   ;; Tidy shadowed file names
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
-;; (use-package vertico-posframe
-;;   :init
-;;   (vertico-posframe-mode t))
+
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
   :init
@@ -428,14 +471,119 @@
   )
 
 ;; UI
+(use-package centaur-tabs
+  :defer t
+  :demand
+  :config
+  (centaur-tabs-mode t)
+  (setq centaur-tabs-style "bar"
+        centaur-tabs-set-icons t
+        centaur-tabs-icon-type 'all-the-icons
+        centaur-tabs-set-bar 'over)
+  :bind
+  ("C-<prior>" . centaur-tabs-backward)
+  ("C-<next>" . centaur-tabs-forward))
+
+(defun meow-setup ()
+  (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+  (meow-motion-define-key
+   '("j" . meow-next)
+   '("k" . meow-prev)
+   '("<escape>" . ignore))
+  (meow-leader-define-key
+   ;; Use SPC (0-9) for digit arguments.
+   '("1" . meow-digit-argument)
+   '("2" . meow-digit-argument)
+   '("3" . meow-digit-argument)
+   '("4" . meow-digit-argument)
+   '("5" . meow-digit-argument)
+   '("6" . meow-digit-argument)
+   '("7" . meow-digit-argument)
+   '("8" . meow-digit-argument)
+   '("9" . meow-digit-argument)
+   '("0" . meow-digit-argument)
+   '("/" . meow-keypad-describe-key)
+   '("?" . meow-cheatsheet))
+  (meow-normal-define-key
+   '("0" . meow-expand-0)
+   '("9" . meow-expand-9)
+   '("8" . meow-expand-8)
+   '("7" . meow-expand-7)
+   '("6" . meow-expand-6)
+   '("5" . meow-expand-5)
+   '("4" . meow-expand-4)
+   '("3" . meow-expand-3)
+   '("2" . meow-expand-2)
+   '("1" . meow-expand-1)
+   '("-" . negative-argument)
+   '(";" . meow-reverse)
+   '("," . meow-inner-of-thing)
+   '("." . meow-bounds-of-thing)
+   '("[" . meow-beginning-of-thing)
+   '("]" . meow-end-of-thing)
+   '("a" . meow-append)
+   '("A" . meow-open-below)
+   '("b" . meow-back-word)
+   '("B" . meow-back-symbol)
+   '("c" . meow-change)
+   '("d" . meow-delete)
+   '("D" . meow-backward-delete)
+   '("e" . meow-next-word)
+   '("E" . meow-next-symbol)
+   '("f" . meow-find)
+   '("g" . meow-cancel-selection)
+   '("G" . meow-grab)
+   '("h" . meow-left)
+   '("H" . meow-left-expand)
+   '("i" . meow-insert)
+   '("I" . meow-open-above)
+   '("j" . meow-next)
+   '("J" . meow-next-expand)
+   '("k" . meow-prev)
+   '("K" . meow-prev-expand)
+   '("l" . meow-right)
+   '("L" . meow-right-expand)
+   '("m" . meow-join)
+   '("n" . meow-search)
+   '("o" . meow-block)
+   '("O" . meow-to-block)
+   '("p" . meow-yank)
+   '("q" . meow-quit)
+   '("Q" . meow-goto-line)
+   '("r" . meow-replace)
+   '("R" . meow-swap-grab)
+   '("s" . meow-kill)
+   '("t" . meow-till)
+   '("u" . meow-undo)
+   '("U" . meow-undo-in-selection)
+   '("v" . meow-visit)
+   '("w" . meow-mark-word)
+   '("W" . meow-mark-symbol)
+   '("x" . meow-line)
+   '("X" . meow-goto-line)
+   '("y" . meow-save)
+   '("Y" . meow-sync-grab)
+   '("z" . meow-pop-selection)
+   '("'" . repeat)
+   '("<escape>" . ignore)))
+
+(use-package meow
+  :config
+  (meow-setup)
+  (meow-global-mode 1))
+
 ;; Hydras
-(use-package hydra)
-(use-package golden-ratio
-  :init (golden-ratio-mode t))
+(use-package hydra
+  :defer t)
+
+
+
 (use-package use-package-hydra)
+
 ;; Focus package https://github.com/larstvei/Focus
 
 (use-package focus
+  :defer t
   :after hydra
   :bind ("C-c f" . hydra-focus/body)
   :hydra (hydra-focus (:hint nil)
@@ -453,6 +601,13 @@
   ("g" text-scale-increase "in")
   ("l" text-scale-decrease "out"))
 
+(use-package zoom
+  :init
+  (setq zoom-size '(0.618 . 0.618))
+  :config
+   (zoom-mode t)
+   )
+
 (use-package dashboard
   :init (setq dashboard-center-content t
               dashboard-items '((recents . 5)
@@ -465,9 +620,16 @@
   (dashboard-setup-startup-hook))
 
 (use-package which-key
+  :defer t
   :config
   (progn (which-key-mode)
-         (which-key-setup-minibuffer))
+         (which-key-setup-minibuffer)
+         (which-key-add-key-based-replacements "C-c s" "spell checking")
+         (which-key-add-key-based-replacements "C-c n" "denote")
+         (which-key-add-key-based-replacements "C-c p" "cape")
+         (which-key-add-key-based-replacements "C-c l" "lsp")
+         (which-key-add-key-based-replacements "C-c t" "org-table")
+         )
   )
 
 (use-package rainbow-delimiters
@@ -478,10 +640,19 @@
 (use-package poke-line
   :config
   (poke-line-global-mode t)
-  (setq-default poke-line-set-pokemon "abra")
+  :init (setq poke-line-pokemon "mimikyu")
+  )
+
+(use-package prism
+  :defer t
+  :hook
+  (json-mode . prism-mode)
+  (yaml-mode . prism-whitespace-mode)
+  (yaml-ts-mode . prism-whitespace-mode)
   )
 ;; ORG MODE
 (use-package org
+  :defer t
   :after (homebrewing)
   :bind
   ("C-c t n" . org-table-create)
@@ -493,15 +664,18 @@
 (define-key global-map "\C-c o l" 'org-store-link)
 (define-key global-map "\C-ca" 'org-agenda)
 (setq org-log-done t)
-(require 'org-habit)
+(use-package org-habit
+  :defer t
+)
 (setq org-agenda-files (list "/Users/b.rabella/org/work.org"
                              "/Users/b.rabella/org/home.org"
                              "/Users/b.rabella/org/2024.org"))
-(add-to-list 'org-modules 'org-habit t)
+
 (add-hook 'org-mode-hook #'org-modern-mode)
 (add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
 
-(require 'ox-latex)
+(use-package ox-latex
+  :defer t)
 (setq org-latex-listings 'minted
       org-latex-packages-alist '(("" "minted"))
       org-latex-pdf-process
@@ -512,6 +686,7 @@
 
 ;; Denote
 (use-package denote
+  :defer t
   :init
   ;; (require 'denote-org-dblock)
   (denote-rename-buffer-mode t)
@@ -551,18 +726,15 @@
 ;;   :config
 ;;   (load-theme 'doom-nord))
 
-(use-package catppuccin-theme
-  :init (setq catppuccin-flavor 'macchiato)
-  :config (load-theme 'catppuccin :no-confirm))
+;; (use-package catppuccin-theme
+;;   :init (setq catppuccin-flavor 'macchiato)
+;;   :config (load-theme 'catppuccin :no-confirm))
 
-
-;; (use-package circadian
-;;   :ensure t
-;;   :after catppuccin-theme
-;;   :config
-;;   (setq circadian-themes '(("8:00" . 'latte)
-;;                            ("19:30" . 'machiato)))
-;;   (circadian-setup))
+(use-package circadian
+  :config
+  (setq circadian-themes '((:sunrise . doom-nord-light)
+                           (:sunset  . doom-nord)))
+  (circadian-setup))
 
 (use-package doom-modeline
   :init (setq doom-modeline-checker-simple-format nil
@@ -715,13 +887,16 @@
 ;;   ;; Posframe is a pop-up tool that must be manually installed for dap-mode
 ;;   )
 (use-package lsp-mode
+  :defer t
   :init
   ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
   (setq lsp-keymap-prefix "C-c l")
   :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
-         ;;(scala-mode . lsp)
+         (scala-mode . lsp)
+         (scala-ts-mode . lsp)
          (haskell-mode . lsp)
          (rust-mode . lsp)
+         (elm-mode . lsp)
          (clojure-mode . lsp)
          (python-mode . lsp)
          (html-mode . lsp)
@@ -732,36 +907,43 @@
   :commands lsp)
 
 ;; optionally
-(use-package lsp-ui :commands lsp-ui-mode)
-;; (use-package lsp-metals
-;;   :ensure t
-;;   :custom
-;;   ;; You might set metals server options via -J arguments. This might not always work, for instance when
-;;   ;; metals is installed using nix. In this case you can use JAVA_TOOL_OPTIONS environment variable.
-;;   (lsp-metals-server-args '(;; Metals claims to support range formatting by default but it supports range
-;;                             ;; formatting of multiline strings only. You might want to disable it so that
-;;                             ;; emacs can use indentation provided by scala-mode.
-;;                             "-J-Dmetals.allow-multiline-string-formatting=off"
-;;                             ;; Enable unicode icons. But be warned that emacs might not render unicode
-;;                             ;; correctly in all cases.
-;;                             "-J-Dmetals.icons=unicode"))
-;;   ;; In case you want semantic highlighting. This also has to be enabled in lsp-mode using
-;;   ;; `lsp-semantic-tokens-enable' variable. Also you might want to disable highlighting of modifiers
-;;   ;; setting `lsp-semantic-tokens-apply-modifiers' to `nil' because metals sends `abstract' modifier
-;;   ;; which is mapped to `keyword' face.
-;;   (lsp-metals-enable-semantic-highlighting t)
-;;   :hook (scala-mode . lsp))
+(use-package lsp-ui
+  :defer t
+  :commands lsp-ui-mode)
+
+(use-package lsp-metals
+  :ensure t
+  :defer t
+  :custom
+  ;; You might set metals server options via -J arguments. This might not always work, for instance when
+  ;; metals is installed using nix. In this case you can use JAVA_TOOL_OPTIONS environment variable.
+  (lsp-metals-server-args '(;; Metals claims to support range formatting by default but it supports range
+                            ;; formatting of multiline strings only. You might want to disable it so that
+                            ;; emacs can use indentation provided by scala-mode.
+                            "-J-Dmetals.allow-multiline-string-formatting=off"
+                            ;; Enable unicode icons. But be warned that emacs might not render unicode
+                            ;; correctly in all cases.
+                            "-J-Dmetals.icons=unicode"))
+  ;; In case you want semantic highlighting. This also has to be enabled in lsp-mode using
+  ;; `lsp-semantic-tokens-enable' variable. Also you might want to disable highlighting of modifiers
+  ;; setting `lsp-semantic-tokens-apply-modifiers' to `nil' because metals sends `abstract' modifier
+  ;; which is mapped to `keyword' face.
+  (lsp-metals-enable-semantic-highlighting t)
+  :hook (scala-mode . lsp))
+
 
 (use-package lsp-haskell)
 
 
 (use-package dap-mode
+  :defer t
   :hook
   (lsp-mode . dap-mode)
   (lsp-mode . dap-ui-mode)
   )
 
 (use-package treesit-auto
+  :defer t
   :custom
   (treesit-auto-install 'prompt)
   :config
@@ -843,12 +1025,16 @@
 
 ;; GO
 (use-package go-mode
-  )
+  :defer t)
 
 ;; Clojure
 (use-package cider
+  :defer t
   )
-(use-package clj-deps-new)
+
+(use-package clj-deps-new
+  :defer t)
+
 (defun clerk-show ()
   (interactive)
   (when-let
@@ -858,10 +1044,13 @@
     (cider-interactive-eval
      (concat "(nextjournal.clerk/show! \"" filename "\")"))))
 
-(define-key clojure-mode-map (kbd "<M-return>") 'clerk-show)
-
+;; add as binding...
+;;(define-key clojure-mode-map (kbd "<M-return>") 'clerk-show)
+(use-package clay
+  :defer t)
 ;; Elixir
 (use-package elixir-mode
+  :defer t
   )
 
 ;; JAVA
@@ -870,6 +1059,7 @@
 ;; ELM
 
 (use-package elm-mode
+  :defer t
   )
 
 ;; (use-package gleam-mode
@@ -881,6 +1071,17 @@
 (use-package groovy-mode
   :mode "Jenkinsfile")
 
+
+;; EXTRA SHIT
+(use-package vterm
+  :defer t)
+(use-package telega
+  :defer t
+  :config
+  (setq telega-server-libs-prefix "/opt/homebrew/Cellar/tdlib/HEAD-f1b7500"))
+
+
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -891,16 +1092,47 @@
  '(org-agenda-files
    '("/Users/b.rabella/org/work.org" "/Users/b.rabella/org/2024.org" ""))
  '(org-latex-minted-langs
-   '((emacs-lisp "common-lisp")
-     (cc "c++")
-     (cperl "perl")
-     (shell-script "bash")
-     (caml "ocaml")
-     (scala "scala")))
+   '((emacs-lisp "common-lisp") (cc "c++") (cperl "perl")
+     (shell-script "bash") (caml "ocaml") (scala "scala")))
  '(org-modules
-   '(ol-bbdb ol-bibtex ol-docview ol-doi ol-eww ol-gnus org-habit ol-info ol-irc ol-mhe ol-rmail ol-w3m))
+   '(ol-bbdb ol-bibtex ol-docview ol-doi ol-eww ol-gnus org-habit ol-info
+             ol-irc ol-mhe ol-rmail ol-w3m))
  '(package-selected-packages
-   '(gruvbox-theme golden-ratio treesit-auto poke-line nano-theme tao-theme clj-deps-new zone-nyan nyan-mode treemacs-nerd-icons dirvish treemacs-all-the-icons treemacs-magit ox-gfm format-all kind-icon which-key-posframe vertico-posframe ormolu org-modern consult-project-extra consult-projectile lsp-haskell consult-lsp lsp-ui multiple-cursors ewal-evil-cursors forge rainbow-delimiters rust-mode scala-ts-mode org-chef python-black circadian doom-themes consult-hoogle consult-eglot consult-dash yasnippet-snippets which-key vertico use-package-hydra treemacs-icons-dired toml-mode scala-mode sbt-mode purescript-mode orderless nix-mode minions marginalia magit highlight-indent-guides haskell-mode groovy-mode go-mode focus flycheck exec-path-from-shell evil-leader embark-consult elm-mode elixir-mode doom-modeline dockerfile-mode docker-compose-mode dhall-mode denote dashboard dap-mode corfu consult-notes cider catppuccin-theme cape breadcrumb all-the-icons))
+   '(all-the-icons base16-theme biome breadcrumb cape casual
+                   catppuccin-theme centaur-tabs cider circadian clay
+                   clj-deps-new clojure-ts-mode consult consult-dash
+                   consult-denote consult-eglot-embark
+                   consult-flycheck consult-flyspell consult-hoogle
+                   consult-lsp consult-notes consult-project-extra
+                   consult-projectile consult-todo corfu dap-mode
+                   dashboard denote dhall-mode difftastic dimmer
+                   dirvish docker-compose-mode dockerfile-mode
+                   doom-modeline doom-themes dracula-theme eglot-jl
+                   elixir-mode ellama elm-mode embark embark-consult
+                   esup evil-leader ewal-evil-cursors
+                   exec-path-from-shell fennel-mode flycheck
+                   flycheck-aspell flycheck-guile flycheck-julia
+                   flycheck-pony flycheck-posframe flycheck-pycheckers
+                   flymake-aspell focus forge format-all
+                   geiser-chicken geiser-guile geiser-racket general
+                   go-mode groovy-mode gruvbox-theme haskell-mode
+                   highlight-indent-guides iceberg-theme jinx
+                   julia-formatter julia-mode julia-snail kind-icon
+                   lsp-haskell lsp-ui magit magit-todos marginalia
+                   markdown-ts-mode meow minions multiple-cursors
+                   nano-theme nix-mode nord-theme nordless-theme nov
+                   nyan-mode orderless org-chef org-modern ormolu
+                   ox-gfm pandoc-mode poke-line ponylang-mode prism
+                   pulsar purescript-mode python-black pyvenv
+                   pyvenv-auto racket-mode rainbow-delimiters
+                   restclient rust-mode sbt-mode scala-mode
+                   scala-ts-mode smartparens stimmung-themes tao-theme
+                   toml-mode treemacs-all-the-icons
+                   treemacs-icons-dired treemacs-magit
+                   treemacs-nerd-icons treesit-auto use-package-hydra
+                   vertico vertico-posframe vterm w3m which-key
+                   which-key-posframe yasnippet-snippets zone-nyan
+                   zoom))
  '(purescript-mode-hook '(purescript-indentation))
  '(treesit-font-lock-level 4))
 (custom-set-faces

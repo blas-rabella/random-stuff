@@ -3,7 +3,7 @@ use wallpaper_rs::{Desktop, DesktopEnvt};
 // #2e3440 #3b4252 #434c5e #4c566a #d8dee9 #e5e9f0 #eceff4
 //
 fn main() {
-    let scale = 0.00095;
+    let scale = 0.00042;
     // let grad = colorgrad::CustomGradient::new()
     //     .html_colors(&[
     //         "#181825", "#1e1e2e", "#b4befe", "#89b4fa", "#74c7ec", "#89dceb",
